@@ -1,0 +1,3 @@
+[submodule "lit-gpt-fork"]
+	path = lit-gpt
+	url = https://github.com/ayulockin/lit-gpt
