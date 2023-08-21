@@ -160,3 +160,7 @@ cython_debug/
 #.idea/
 
 checkpoints/
+data/
+out/
+results-*.json
+wandb/
