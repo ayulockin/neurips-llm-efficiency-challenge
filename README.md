@@ -132,19 +132,108 @@ python lit-gpt/generate/base.py --checkpoint_dir checkpoints/meta-llama/Llama-2-
 
 # Finetune
 
+`lit-gpt` provides a few resource constrainted finetuning strategies like lora, qlora, etc., out of the box.
 
-fine-tune
-
-```
-python lit-gpt/finetune/lora.py --data_dir data/dolly/tiiuae/falcon-7b --checkpoint_dir checkpoints/tiiuae/falcon-7b --precision bf16-true --out_dir out/lora/falcon-7b
-```
-
-
-ElutherAI Eval Harness
+1. LoRA finetuning
 
 ```
-python lit-gpt/eval/lm_eval_harness.py --checkpoint_dir checkpoints/openlm-research/open_llama_3b --precision "bf16-true" --eval_tasks [truthfulqa_mc --batch_size 4 --save_filepath "results-openllama-3b.json"
+lit-gpt/finetune/lora.py --data_dir data/dolly/meta-llama/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b
 ```
+
+2. QLoRA finetuning
+
+To finetune with QLoRA, you will have to install the [bitsandbytes](https://github.com/TimDettmers/bitsandbytes) library.
+
+```
+pip install bitsandbytes
+```
+
+Finetune with QLoRA by passing the `--quantize` flag to the `lora.py` script
+
+```
+lit-gpt/finetune/lora.py --data_dir data/dolly/meta-llama/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b --quantize "bnb.nf4"
+```
+
+# Evaluation (EluetherAI LM Eval Harness)
+
+Once you have a working setup for finetuing, coming up with finetuing strategies is going to be one of the most important task but this will be guided by an even bigger task - thinking through the evaluation strategy.
+
+As per the organizers of this competition:
+
+> The evaluation process in our competition will be conducted in two stages. In the first stage, we will run a subset of HELM benchmark along with a set of secret holdout tasks. The holdout tasks will consist of logic reasoning type of multiple-choice Q&A scenarios as well as conversational chat tasks. Submissions will be ranked based on their performance across all tasks. The ranking will be determined by the geometric mean across all evaluation tasks.
+
+We cannot do anything about the secret hold out tasks. But we can try to improve the finetuned model on a subset of the HELM benchmark.
+
+We can also consider using other benchmarks like EluetherAI's [`lm-evaluation-harness`](https://github.com/EleutherAI/lm-evaluation-harness). You can find the tasks available in this benchmark [here](https://github.com/EleutherAI/lm-evaluation-harness/blob/master/docs/task_table.md). A few tasks here can be considered your validation set since there is an overlap between `lm-evaluation-harness` and HELM.
+
+Install this library and perform evaluation with the base checkpoint and the LoRA finetuned checkpoint.
+
+1. Install `lm-evaluation-harness`
+
+```
+cd ..
+git clone https://github.com/EleutherAI/lm-evaluation-harness
+cd lm-evaluation-harness
+pip install -e .
+cd neurips-llm-efficiency-challenge
+```
+
+2. Evaluate using the base checkpoint
+
+```
+python lit-gpt/eval/lm_eval_harness.py --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision "bf16-true" --eval_tasks "[truthfulqa_mc, wikitext, openbookqa, arithmetic_1dc]" --batch_size 4 --save_filepath "results-falcon-7b.json"
+```
+
+3. Evaluate the finetuned checkpoint
+
+```
+python lit-gpt/eval/lm_eval_harness_lora.py --lora_path out/lora/llama-2-7b/lit_model_lora_finetuned.pth --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision "bf16-true" --eval_tasks "[truthfulqa_mc, wikitext, openbookqa, arithmetic_1dc]" --batch_size 4 --save_filepath "results-falcon-7b.json"
+```
+
+> Here `out/lora/<model-name>/lit_model_lora_finetuned.pth` is something we get after finetuning the model.
+
+> Notice that for base model evaluation we used the `lm_eval_harness.py` script while for finetuned model evaluation we are using `lm_eval_harness_lora.py`. If you are using other strategy, you might have to modify the scipt to cater to your strategy.
+
+# Setting up submission pipeline
+
+The organizers of this challenge, have provided an useful toy example to demonstrate the submission steps. Check out the official steps [here](https://github.com/llm-efficiency-challenge/neurips_llm_efficiency_challenge/blob/master/toy-submission/README.md).
+
+```
+cd ..
+```
+
+### Installing Nvidia Container Toolkit
+
+There are a lot of details mentioned in the [official documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to install Nvidia container toolkit.
+
+Here are the steps that worked for me:
+
+```
+sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Setup the GPG key (don't ignore this step)
+
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+```
+
+### Build the docker image and run
+
+```
+sudo docker build -t toy_submission . 
+sudo docker run --rm --gpus all -p 9000:80 toy_submission
+```
+
+> 
+
+# Evaluation (HELM)
+
+A subset (unknown) will be used for the leaderboard evaluation. We can choose to use the official HELM repository but it's best to use this fork of the repo so that you can benchmark using the Dockerfile 
+
 
 Run docker server
 ```
