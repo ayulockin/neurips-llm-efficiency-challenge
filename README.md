@@ -196,11 +196,9 @@ python lit-gpt/eval/lm_eval_harness_lora.py --lora_path out/lora/llama-2-7b/lit_
 
 # Setting up submission pipeline
 
-The organizers of this challenge, have provided an useful toy example to demonstrate the submission steps. Check out the official steps [here](https://github.com/llm-efficiency-challenge/neurips_llm_efficiency_challenge/blob/master/toy-submission/README.md).
+The organizers of this challenge, have provided an useful toy example to demonstrate the submission steps. Check out the official repo [here](https://github.com/llm-efficiency-challenge/neurips_llm_efficiency_challenge/blob/master/toy-submission/README.md).
 
-```
-cd ..
-```
+I have copied the files required to setup the submisison pipeline to this repo to simplify things.
 
 ### Installing Nvidia Container Toolkit
 
@@ -224,34 +222,40 @@ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 ### Build the docker image and run
 
 ```
-sudo docker build -t toy_submission . 
+docker build -t submission .
 sudo docker run --rm --gpus all -p 9000:80 toy_submission
 ```
 
-> 
+If everything works out, you will have a successful running HTTP server. The steps mentioned in the `Dockerfile` should be self satisfactory.
 
 # Evaluation (HELM)
 
-A subset (unknown) will be used for the leaderboard evaluation. We can choose to use the official HELM repository but it's best to use this fork of the repo so that you can benchmark using the Dockerfile 
-
-
-Run docker server
-```
-sudo docker run --rm --gpus all -p 9000:80 toy_submission
-```
-
-nvidia container toolkit
+A subset (unknown) will be used for the leaderboard evaluation. We can choose to use the [official HELM repository](https://github.com/stanford-crfm/helm) but it is not configured to hit the endpoints of the HTTP server. We will instead be using this [fork](https://github.com/drisspg/helm/tree/neruips_client) (`neruips_client` branch - note the typo) of the HELM repo.
 
 ```
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
+cd ..
+git clone https://github.com/drisspg/helm.git@neruips_client
 ```
 
-docker build
+Create a new environment because this repo uses different versions of multiple repositories.
 
 ```
-sudo docker build -t toy_submission . 
+conda create -n helm-eval python==3.10.0
+conda activate helm-eval
+cd helm
+pip install -e .
 ```
+
+**Note**: Further change the base url that's hardcoded from `http://localhost:8080` (to avoid conflict with Jupyter Notebook) to `http://localhost:9000` in line 30 of this file - `helm/src/helm/proxy/clients/http_model_client.py`.
+
+Run the following lines to benchmark on the `mmlu` (subset of HELM) benchmark:
+
+```
+echo 'entries: [{description: "mmlu:model=neurips/local,subject=college_computer_science", priority: 4}]' > run_specs.conf
+helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1000
+helm-summarize --suite v1
+```
+
+Check out the various benchmarks that are present in this benchmark [here](https://crfm.stanford.edu/helm/latest/)
+
+
