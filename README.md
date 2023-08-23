@@ -251,6 +251,8 @@ pip install -e .
 Run the following lines to benchmark on the `mmlu` (subset of HELM) benchmark:
 
 ```
+cd ..
+cd neurips-llm-efficiency-challenge
 echo 'entries: [{description: "mmlu:model=neurips/local,subject=college_computer_science", priority: 4}]' > run_specs.conf
 helm-run --conf-paths run_specs.conf --suite v1 --max-eval-instances 1000
 helm-summarize --suite v1
@@ -258,4 +260,12 @@ helm-summarize --suite v1
 
 Check out the various benchmarks that are present in this benchmark [here](https://crfm.stanford.edu/helm/latest/)
 
+You might encounter this issue - `OSError: /opt/conda/envs/helm-eval/lib/python3.10/site-packages/nvidia/cublas/lib/libcublas.so.11: symbol cublasLtGetStatusString version libcublasLt.so.11 not defined in file libcublasLt.so.11 with link time reference`. If so do the following steps:
 
+To solve this check out this [Stack OverFlow answer](https://stackoverflow.com/a/74828501/8663152).
+
+# Final Thoughts
+
+I hope the documented steps will expedite the setting up process so that more time can be spent on doing ML.
+
+The steps were tested on a GCP Compute Engine VM with A100 (40 GB) GPU. If you have a different setup and if something doesn't work, feel free to open an issue or raise a PR.
