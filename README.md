@@ -264,6 +264,8 @@ You might encounter this issue - `OSError: /opt/conda/envs/helm-eval/lib/python3
 
 To solve this check out this [Stack OverFlow answer](https://stackoverflow.com/a/74828501/8663152).
 
+After successful evaluation, you can find the results in the `benchmark_output` directory. I am working on logging the results to Weights and Biases for easy comparison and tracking.
+
 # Final Thoughts
 
 I hope the documented steps will expedite the setting up process so that more time can be spent on doing ML.
