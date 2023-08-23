@@ -20,6 +20,7 @@ conda create -n neurips-llm python==3.10.0
 
 ```
 git clone --recurse-submodule https://github.com/ayulockin/neurips-llm-efficiency-challenge
+cd neurips-llm-efficiency-challenge
 ```
 
 Note the usage of `--recurse-submodule` here. The repo uses my [fork](https://github.com/ayulockin/lit-gpt) of [`lit-gpt`](https://github.com/Lightning-AI/lit-gpt) as a submodule. My fork is instrumented with [Weights and Biases](https://wandb.ai/site) experiment tracking and model versioning capabilities. This is also in sync with the upstream repo (lit-gpt). 
@@ -39,7 +40,9 @@ This will download CUDA driver version 11.8 if it is compatible with your instal
 Let's install other requirements by lit-gpt
 
 ```
+cd lit-gpt
 pip install -r requirements.txt tokenizers sentencepiece huggingface_hub
+cd ..
 ```
 
 # CUDA gotchas and Flash Attention
@@ -48,8 +51,8 @@ In order to finetune a large model (7B) efficiently, [flash attention](https://g
 
 This library requires CUDA runtime >= 11.4 and PyTorch >= 1.12.
 
-<details open>
-<summary>Resolving CUDA</summary>
+<details>
+<summary>Update CUDA to 11.4 or above</summary>
 <br>
 The CUDA runtime and driver are two different APIs. You can check the runtime version using `nvcc --version` and the driver version using `nvidia-smi`.
 
@@ -86,44 +89,54 @@ MAX_JOBS=8 pip install flash-attn --no-build-isolation
 
 > An A100 will typically come with 83.6 GB of usable RAM. `ninja` will do parallel compilation jobs that could exhaust the amount of RAM. Set the max number of jobs using `MAX_JOBS`. A `MAX_JOBS=4` will take 30+ minutes to compile flash attention, while `MAX_JOBS=8` might take 20ish minutes (with 35ish GB of RAM usage). On an A100, `MAX_JOBS` of 16 might work (haven't tested).
 
+# Model
+
+We start by downloading the model and preparing the model so that it can be consumed by `lit-gpt`'s finetuning pipeline.
+
+```
+python lit-gpt/scripts/download.py --repo_id meta-llama/Llama-2-7b-hf --token <HuggingFace Token>
+python lit-gpt/scripts/convert_hf_checkpoint.py --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf
+```
+
+> Note: In order to use Llama 2 model you need to fill a small form in the HuggingFace [model card page](https://huggingface.co/meta-llama/Llama-2-7b-hf) for this model. The permission is usually granted in 1-2 days. Tip: Please provide the same email id that you used to create your HuggingFace account.
+
+> Note: You can generate your HuggingFace access token [here](https://huggingface.co/settings/tokens).
+
 # Data
 
-
-
-generate
+Download the dataset and prepare it using a convenient script provided by `lit-gpt`. Below I am downloading the [`databricks-dolly-15k`](https://huggingface.co/datasets/databricks/databricks-dolly-15k) dataset.
 
 ```
-python lit-gpt/generate/base.py --checkpoint_dir /home/ayushthakur/llm/neurips-llm-efficiency-challenge/checkpoints/tiiuae/falcon-7b --prompt "Tell me an interesting fun fact about earth:"
+python lit-gpt/scripts/prepare_dolly.py --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf
 ```
+
+> Note: The tokenizer used by the model checkpoint is used to tokenize the dataset. The dataset will be split into train and test set in the `.pt` format.
+
+You are not only limited to the `databricks-dolly-15k` dataset. You can also download and prepare [`RedPajama-Data-1T`](https://huggingface.co/datasets/togethercomputer/RedPajama-Data-1T) dataset.
+
+```
+python lit-gpt/scripts/prepare_redpajama.py --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf
+```
+
+Follow [these steps](https://github.com/Lightning-AI/lit-gpt/blob/main/tutorials/finetune_lora.md#tune-on-your-dataset) to create your own data preparation script.
+
+> Tip: You will ideally want to combine datasets from varying benchmarks and sample them properly.
+
+## Validate your setup
+
+At this point, before going ahead, let's validate if our setup is working.
+
+```
+python lit-gpt/generate/base.py --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --prompt "Tell me an interesting fun fact about earth:"
+```
+
+# Finetune
+
 
 fine-tune
 
 ```
 python lit-gpt/finetune/lora.py --data_dir data/dolly/tiiuae/falcon-7b --checkpoint_dir checkpoints/tiiuae/falcon-7b --precision bf16-true --out_dir out/lora/falcon-7b
-```
-
-
-Update CUDA runtime to 11.4 or above
-
-```
-
-```
-
-Flash Attention
-
-
-
-Prepare data
-
-```
-python lit-gpt/scripts/prepare_dolly.py --checkpoint_dir checkpoints/openlm-research/open_llama_3b
-```
-
-Download the model checkpoint
-
-```
-python lit-gpt/scripts/download.py --repo_id openlm-research/open_llama_3b --token <HuggingFace Token>
-python lit-gpt/scripts/convert_hf_checkpoint.py --checkpoint_dir checkpoints/openlm-research/open_llama_3b
 ```
 
 
