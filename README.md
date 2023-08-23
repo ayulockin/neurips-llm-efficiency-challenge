@@ -206,11 +206,6 @@ There are a lot of details mentioned in the [official documentation](https://doc
 
 Here are the steps that worked for me:
 
-```
-sudo apt-get install -y nvidia-container-toolkit
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-```
 
 Setup the GPG key (don't ignore this step)
 
@@ -219,11 +214,19 @@ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
    && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
 ```
 
+Run the following commands:
+
+```
+sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
 ### Build the docker image and run
 
 ```
 docker build -t submission .
-sudo docker run --rm --gpus all -p 9000:80 toy_submission
+sudo docker run --rm --gpus all -p 8080:80 toy_submission
 ```
 
 If everything works out, you will have a successful running HTTP server. The steps mentioned in the `Dockerfile` should be self satisfactory.
@@ -246,7 +249,7 @@ cd helm
 pip install -e .
 ```
 
-**Note**: Further change the base url that's hardcoded from `http://localhost:8080` (to avoid conflict with Jupyter Notebook) to `http://localhost:9000` in line 30 of this file - `helm/src/helm/proxy/clients/http_model_client.py`.
+**Note**: If 8080 is already in use, do the following: change the base url that's hardcoded from `http://localhost:8080` (to avoid conflict with Jupyter Notebook, most probable) to `http://localhost:9000` in line 30 of this file - `helm/src/helm/proxy/clients/http_model_client.py`.
 
 Run the following lines to benchmark on the `mmlu` (subset of HELM) benchmark:
 
