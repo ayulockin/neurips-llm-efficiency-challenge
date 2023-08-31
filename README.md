@@ -82,7 +82,7 @@ To download Flash Attention here are the required steps:
 
 ```
 pip install packaging
-pip install packaging uninstall -y ninja && pip install ninja
+pip uninstall -y ninja && pip install ninja
 
 MAX_JOBS=8 pip install flash-attn --no-build-isolation
 ```
