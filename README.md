@@ -82,7 +82,7 @@ To download Flash Attention here are the required steps:
 
 ```
 pip install packaging
-pip install packaging uninstall -y ninja && pip install ninja
+pip uninstall -y ninja && pip install ninja
 
 MAX_JOBS=8 pip install flash-attn --no-build-isolation
 ```
@@ -151,7 +151,7 @@ pip install bitsandbytes
 Finetune with QLoRA by passing the `--quantize` flag to the `lora.py` script
 
 ```
-lit-gpt/finetune/lora.py --data_dir data/dolly/meta-llama/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b --quantize "bnb.nf4"
+python lit-gpt/finetune/lora.py --data_dir data/dolly/meta-llama/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b --quantize "bnb.nf4"
 ```
 
 # Evaluation (EluetherAI LM Eval Harness)
