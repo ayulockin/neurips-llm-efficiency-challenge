@@ -137,7 +137,7 @@ python lit-gpt/generate/base.py --checkpoint_dir checkpoints/meta-llama/Llama-2-
 1. LoRA finetuning
 
 ```
-python lit-gpt/finetune/lora.py --data_dir data/dolly/meta-llama/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b
+python lit-gpt/finetune/lora.py --data_dir data/dolly/ --checkpoint_dir checkpoints/meta-llama/Llama-2-7b-hf --precision bf16-true --out_dir out/lora/llama-2-7b
 ```
 
 2. QLoRA finetuning
